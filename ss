@@ -1,63 +1,4 @@
-window.settings = {
-    blueTeam: "#4254f5",
-    redTeam: "#eb3326",
-    orangeTeam: "#fca503",
-    aimbotKey: "ShiftLeft",
-    angleOrDistance: true,
-    aimbotSmoothness: 2,
-    maxAngle: 3,
-    fov: 1.25,
-}
-window.aimbotToggled = false;
-
-window.addEventListener('keydown', function(e){
-    if(e.code == window.settings.aimbotKey){
-        window.aimbotToggled = true;
-    }
-
-})
-
-window.addEventListener('keyup', function(e){
-    if(e.code == window.settings.aimbotKey){
-        window.aimbotToggled = false;
-    }
-
-})
-
-window.dist3d = (player1, player2)=>{return Math.sqrt((player1.x-player2.x)**2 + (player1.y-player2.y)**2 + (player1.z-player2.z)**2)};
-
-window.angleDistance =(player1, player2)=>{
-
-
-    let angle = window.getAngle(player1, player2);
-
-    const angleDist = Math.sqrt((player1.yaw - angle.yaw)**2 + (player1.pitch - angle.pitch)**2);
-    return angleDist*window.dist3d(player1, player2);
-
-}
-
-
-window.getNearestPlayer = function(us, enemies){
-
-    let nearestPlayer = {distance: null, player: null} //we leave it empty to start
-
-    enemies.forEach(them=>{
-
-        if(them){ //sometimes a glitched player slips thorugh, so lets make sure they are valid before we do anything
-
-            if(them.id != us.id){ //our own player is in here, so lets make sure to filter it out
-
-                if(them.hp > 0 && them.playing && (!us.team || (us.team != them.team)) && window.visiblePlayers[them.id]){
-                    
-
-                    let distance = 999;
-                    if(window.settings.angleOrDistance){
-                        distance = window.angleDistance(us,them) || 0;
-                    }else{
-                        distance = window.dist3d(us,them) || 0;
-                    }
-                    if(  !nearestPlayer.distance || distance < nearestPlayer.distance  ){
-                        nearestPlayer.distance = distance;
+stance = distance;
                         nearestPlayer.player = them;
                     }
                 }
@@ -71,26 +12,7 @@ window.getNearestPlayer = function(us, enemies){
 }
 
 window.calcAngle = function(us, them, dist){
-    let delta = {x: them.x - us.x + 2*(them.dx * dist / us.weapon.subClass.velocity),
-                 y: them.y-us.y - 0.072,
-                 z: them.z - us.z + 2*(them.dz * dist / us.weapon.subClass.velocity)
-                };
-
-    delta = new BABYLON.Vector3(delta.x, delta.y, delta.z).normalize();
-    const newYaw = Math.radRange(-Math.atan2(delta.z, delta.x) + Math.PI / 2)
-
-    const newPitch = Math.clamp(-Math.asin(delta.y), -1.5, 1.5);
-
-
-
-    us.pitch += ((newPitch || 0)-us.pitch)/window.settings.aimbotSmoothness;
-    us.yaw += ((newYaw || 0)-us.yaw)/window.settings.aimbotSmoothness;
-
-
-    return 0;
-}
-
-window.getAngle = function(us, them){
+    let delta = {x: t
     let delta = {x: them.x - us.x ,
                  y: them.y-us.y - 0.072,
                  z: them.z - us.z,
@@ -207,36 +129,3 @@ const attemptPatch = (source) => {
             source = patched;
         }
     }
-
-    return source;
-}
-
-(async function() {
-    let script = await request(`https://shellshock.io/src/shellshock.min.js`);
-    console.log(script);
-    injectInline(attemptPatch(script)) //modify the games code and then apply it :))
-})();
-
-
-
-
-let observer = new MutationObserver(mutations => {
-
-    for (const mutation of mutations) {
-
-        for (let node of mutation.addedNodes) {
-
-            if (node.tagName == 'HEAD') {
-            } else if (node.tagName == 'SCRIPT' && node.src.includes("shellshock.min.js")) {
-                node.outerHTML = ``
-                //or we can make it point towards our own custom JS file...
-                //node.src = "https://ourFileLocation/code.js"
-            }
-        }
-    }
-});
-
-observer.observe(document, {
-    childList: true,
-    subtree: true
-})
